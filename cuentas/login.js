@@ -1,7 +1,7 @@
 const AuthSystem = {
     token: "",
     repo: "loslocos817yt-star/Club-Peng-in-",
-    path: "cuentas/usuarios/usuarios.json",
+    path: "cuentas/usuarios/cuentas.json",
     usuarioActual: null,
     db: [],
     sha: "",
@@ -9,17 +9,16 @@ const AuthSystem = {
     async inicializar() {
         try {
             const res = await fetch('cuentas/api.hash');
-            if (!res.ok) throw new Error("No se encontró api.hash");
+            if (!res.ok) throw new Error("No se pudo cargar api.hash");
             const binario = await res.text();
             
-            // TRADUCTOR: De Binario (0101) a Texto (ghp_...)
             this.token = binario.trim().match(/.{1,8}/g).map(byte => 
                 String.fromCharCode(parseInt(byte, 2))
             ).join("");
 
             console.log("--- Sistema Ofuscado Listo ---");
         } catch (e) {
-            console.error("Error al reconstruir el token:", e);
+            alert("Error inicializando: " + e.message);
         }
     },
 
@@ -34,28 +33,33 @@ const AuthSystem = {
                 headers: { "Authorization": `token ${this.token}` }
             });
             
-            if (res.ok) {
-                const data = await res.json();
-                this.sha = data.sha;
-                this.db = JSON.parse(atob(data.content));
-
-                let user = this.db.find(u => u.nombre.toLowerCase() === nombre.toLowerCase());
-
-                if (!user) {
-                    user = { 
-                        nombre: nombre, 
-                        monedas: 500, 
-                        posicion: { x: 450, y: 350 },
-                        items: [] 
-                    };
-                    this.db.push(user);
-                    await this.guardarEnGitHub(`Nuevo pingüino: ${nombre}`);
-                }
-                this.usuarioActual = user;
-                return user;
+            if (!res.ok) {
+                const errorData = await res.json();
+                // Esto nos dirá si el token expiró o si la ruta está mal
+                alert("Error de GitHub: " + res.status + " - " + errorData.message);
+                return null;
             }
+
+            const data = await res.json();
+            this.sha = data.sha;
+            this.db = JSON.parse(atob(data.content));
+
+            let user = this.db.find(u => u.nombre.toLowerCase() === nombre.toLowerCase());
+
+            if (!user) {
+                user = { 
+                    nombre: nombre, 
+                    monedas: 500, 
+                    posicion: { x: 450, y: 350 },
+                    items: [] 
+                };
+                this.db.push(user);
+                await this.guardarEnGitHub(`Nuevo pingüino: ${nombre}`);
+            }
+            this.usuarioActual = user;
+            return user;
         } catch (e) {
-            console.error("Error en login:", e);
+            alert("Error crítico en login: " + e.message);
             return null;
         }
     },
@@ -81,7 +85,7 @@ const AuthSystem = {
         if (res.ok) {
             const resData = await res.json();
             this.sha = resData.content.sha;
-            console.log("Datos guardados en el Repo.");
+            console.log("Datos guardados.");
         }
     }
 };
