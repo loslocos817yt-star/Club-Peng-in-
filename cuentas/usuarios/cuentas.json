@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "nombre": "dodo",
+    "monedas": 500,
+    "posicion": {
+      "x": 450,
+      "y": 350
+    },
+    "items": []
+  }
+]
