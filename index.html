@@ -116,6 +116,13 @@
         const btn = document.getElementById('btn-play');
         const status = document.getElementById('status');
 
+    window.onload = function() {
+        if (localStorage.getItem("pinguino_actual")) {
+            status.innerText = "Reconectando...";
+            setTimeout(() => { window.location.href = "game.html"; }, 500);
+        }
+    };
+
         btn.onclick = async function() {
             status.innerText = "Sincronizando con la isla...";
             btn.style.opacity = "0.7";
@@ -126,7 +133,7 @@
 
             if (user) {
                 status.innerText = "¡Waddle On, " + user.nombre + "!";
-                sessionStorage.setItem('pinguino_actual', JSON.stringify(user));
+                localStorage.setItem('pinguino_actual', JSON.stringify(user));
                 setTimeout(() => {
                     window.location.href = "game.html";
                 }, 1200);

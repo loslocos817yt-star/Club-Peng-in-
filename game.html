@@ -54,7 +54,8 @@ const cCanvas = document.createElement('canvas');
 const cCtx = cCanvas.getContext('2d', { willReadFrequently: true });
 
 // Jugador y Pelota ajustados para Horizontal
-const player = { x: 450, y: 350, speed: 6, w: 70, h: 70, frame: 0, timer: 0, dir: 'sur', moving: false, sitting: false };
+const userData = JSON.parse(localStorage.getItem("pinguino_actual")) || { posicion: { x: userData.posicion.x, y: userData.posicion.y } };
+const player = { x: userData.posicion.x, y: userData.posicion.y, speed: 6, w: 70, h: 70, frame: 0, timer: 0, dir: 'sur', moving: false, sitting: false };
 const ball = { x: 300, y: 300, dx: 0, dy: 0, size: 35, friction: 0.985 };
 const inputs = { up: false, down: false, left: false, right: false };
 
