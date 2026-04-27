@@ -3,56 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Club Penguin - Inicio</title>
+    <title>Club Penguin - PattitexTEC</title>
     <style>
-        body { 
-            background: #0066cc; 
-            color: white; 
-            font-family: 'Arial Rounded MT Bold', Arial, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            height: 100vh; 
+        body {
+            background: #0099ff url('assets/maps/mapa1.png') no-repeat center center;
+            background-size: cover;
+            height: 100vh;
             margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
             overflow: hidden;
         }
-        .container {
-            text-align: center;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            border-radius: 30px;
-            border: 5px solid #ffffff;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+
+        /* Overlay para que el fondo no distraiga tanto */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 74, 141, 0.6);
+            z-index: 0;
         }
-        h1 { font-size: 3rem; text-shadow: 2px 2px #000; margin-bottom: 10px; }
-        .pingu { font-size: 80px; margin-bottom: 20px; }
-        button {
-            padding: 15px 40px;
-            font-size: 24px;
-            background: #ffcc00;
+
+        .login-card {
+            position: relative;
+            z-index: 1;
+            background: #0059b3;
+            border: 6px solid #ffffff;
+            border-radius: 40px;
+            padding: 40px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 15px 0 rgba(0,0,0,0.2);
+        }
+
+        .preview-container {
+            background: #fff;
+            width: 150px;
+            height: 150px;
+            margin: -90px auto 20px auto;
+            border-radius: 50%;
+            border: 6px solid #0059b3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+        }
+
+        .preview-container img {
+            width: 110%;
+            height: auto;
+            margin-top: 10px;
+        }
+
+        h1 {
+            color: #ffcc00;
+            font-size: 2.2rem;
+            margin: 10px 0;
+            text-shadow: 3px 3px 0 #000;
+            -webkit-text-stroke: 1px #fff;
+        }
+
+        p { color: #fff; font-weight: bold; margin-bottom: 30px; }
+
+        .btn-play {
+            background: #99cc00;
+            color: white;
+            font-size: 28px;
+            padding: 12px 0;
+            width: 100%;
             border: none;
-            border-radius: 50px;
+            border-radius: 15px;
             cursor: pointer;
             font-weight: bold;
-            color: #333;
-            box-shadow: 0 5px 0 #cca300;
-            transition: 0.1s;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+            box-shadow: 0 6px 0 #669900;
+            transition: all 0.1s;
         }
-        button:active {
-            transform: translateY(5px);
-            box-shadow: 0 0 0 #cca300;
+
+        .btn-play:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 #669900;
         }
-        .status { margin-top: 15px; font-weight: bold; color: #ffeb3b; }
+
+        .status {
+            margin-top: 20px;
+            height: 20px;
+            font-size: 14px;
+            color: #ffcc00;
+        }
+
+        /* Estética de las esquinas */
+        .decoration {
+            position: absolute;
+            width: 50px; height: 50px;
+            background: #ffcc00;
+            border-radius: 50%;
+            top: -10px; right: -10px;
+            border: 4px solid white;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="pingu">🐧</div>
+    <div class="login-card">
+        <div class="decoration"></div>
+        <div class="preview-container">
+            <img src="assets/pingüino/preview.png" alt="Penguin Preview">
+        </div>
         <h1>CLUB PENGUIN</h1>
         <p>PattitexTEC Edition</p>
-        <button id="btn-play">¡A JUGAR!</button>
+        
+        <button class="btn-play" id="btn-play">¡A JUGAR!</button>
         <div id="status" class="status"></div>
     </div>
 
@@ -62,23 +126,22 @@
         const status = document.getElementById('status');
 
         btn.onclick = async function() {
-            status.innerText = "Conectando al servidor...";
+            status.innerText = "Sincronizando con la isla...";
+            btn.style.opacity = "0.7";
             btn.disabled = true;
 
             await AuthSystem.inicializar();
             const user = await AuthSystem.login();
-            
+
             if (user) {
-                status.innerText = "¡Bienvenido, " + user.nombre + "!";
-                // Guardamos los datos para el juego
+                status.innerText = "¡Waddle On, " + user.nombre + "!";
                 sessionStorage.setItem('pinguino_actual', JSON.stringify(user));
-                
-                // Redirigimos después de un momento
                 setTimeout(() => {
                     window.location.href = "game.html";
-                }, 1000);
+                }, 1200);
             } else {
-                status.innerText = "Error al iniciar sesión.";
+                status.innerText = "Error. Revisa tu conexión.";
+                btn.style.opacity = "1";
                 btn.disabled = false;
             }
         };
