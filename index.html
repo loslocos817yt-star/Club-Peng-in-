@@ -27,7 +27,9 @@
             box-shadow: 0 8px 0 rgba(0,0,0,0.1);
         }
         .preview-container img { width: 110%; height: auto; margin-top: 10px; }
-        .logo-main { width: 90%; height: auto; margin-bottom: 15px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        .logo-main { width: 90%; height: auto; margin-bottom: 10px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        
+        .counter { color: #ffcc00; font-weight: bold; margin-bottom: 10px; font-size: 16px; }
         
         input {
             width: 90%; padding: 12px; margin: 8px 0; border-radius: 12px;
@@ -39,24 +41,26 @@
             background: #99cc00; color: white; font-size: 24px; padding: 12px 0; width: 100%;
             border: none; border-radius: 15px; cursor: pointer; font-weight: bold;
             text-shadow: 2px 2px 0 rgba(0,0,0,0.3); box-shadow: 0 6px 0 #669900;
-            margin-top: 10px;
+            margin-top: 10px; transition: 0.1s;
         }
         .btn-play:active { transform: translateY(4px); box-shadow: 0 2px 0 #669900; }
+        .btn-play:disabled { background: #cccccc; box-shadow: 0 6px 0 #999999; cursor: not-allowed; }
         
         .toggle-link {
             color: #ffcc00; margin-top: 15px; cursor: pointer; font-size: 14px;
             text-decoration: underline; display: block;
         }
-        .status { margin-top: 15px; font-size: 14px; color: #fff; min-height: 20px; }
+        .status { margin-top: 15px; font-size: 14px; color: #fff; min-height: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="login-card">
         <div class="preview-container"><img src="assets/pingüino/preview.png" alt="Preview"></div>
+        <div class="counter">Pingüinos: <span id="pingu-total">0</span></div>
         <img src="assets/etc/ui%26gui/logo.png" class="logo-main" alt="Logo">
         
         <div id="form-container">
-            <input type="text" id="user-name" placeholder="Nombre del Pingüino">
+            <input type="text" id="user-name" placeholder="Nombre">
             <input type="password" id="user-pass" placeholder="Contraseña">
             <button class="btn-play" id="btn-action">ENTRAR</button>
         </div>
@@ -70,12 +74,24 @@
         const btn = document.getElementById('btn-action');
         const status = document.getElementById('status');
         const toggle = document.getElementById('toggle-mode');
+        const counter = document.getElementById('pingu-total');
         let isRegister = false;
+
+        window.onload = async () => {
+            await AuthSystem.inicializar();
+            counter.innerText = AuthSystem.db.length;
+            
+            const saved = localStorage.getItem("pinguino_actual");
+            if (saved) {
+                const user = JSON.parse(saved);
+                status.innerText = "Bienvenido de nuevo, " + user.nombre;
+            }
+        };
 
         toggle.onclick = () => {
             isRegister = !isRegister;
-            btn.innerText = isRegister ? "REGISTRARME" : "ENTRAR";
-            toggle.innerText = isRegister ? "¿Ya tienes cuenta? Entra aquí" : "¿No tienes cuenta? Crea una";
+            btn.innerText = isRegister ? "REGISTRAR" : "ENTRAR";
+            toggle.innerText = isRegister ? "¿Ya tienes cuenta? Entra" : "¿No tienes cuenta? Crea una";
             status.innerText = "";
         };
 
@@ -84,14 +100,13 @@
             const pass = document.getElementById('user-pass').value.trim();
 
             if (!nombre || !pass) {
-                status.innerText = "¡Escribe tu nombre y clave!";
+                status.innerText = "¡Faltan datos!";
                 return;
             }
 
             status.innerText = "Sincronizando...";
             btn.disabled = true;
 
-            await AuthSystem.inicializar();
             const user = await AuthSystem.autenticar(nombre, pass, isRegister);
 
             if (user) {
@@ -99,6 +114,7 @@
                 window.location.href = "game.html";
             } else {
                 btn.disabled = false;
+                status.innerText = isRegister ? "Error al crear cuenta" : "Datos incorrectos";
             }
         };
     </script>
