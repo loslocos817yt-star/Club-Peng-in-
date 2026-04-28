@@ -28,5 +28,15 @@
       "y": 350
     },
     "items": []
+  },
+  {
+    "nombre": "DODO2",
+    "pass": "123",
+    "monedas": 500,
+    "posicion": {
+      "x": 450,
+      "y": 350
+    },
+    "items": []
   }
 ]
