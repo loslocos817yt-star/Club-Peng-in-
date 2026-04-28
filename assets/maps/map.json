@@ -1,0 +1,28 @@
+{
+  "mapa1.png": {
+    "archivo_col": "map1.png",
+    "cancion": "mapa1.mp3",
+    "portales": [
+      {
+        "x1": -2,
+        "y1": 290,
+        "x2": 36,
+        "y2": 325,
+        "destino": "mapa2.png"
+      }
+    ]
+  },
+  "mapa2.png": {
+    "archivo_col": "map2.png",
+    "cancion": "mapa1.mp3",
+    "portales": [
+      {
+        "x1": 820,
+        "y1": 126,
+        "x2": 900,
+        "y2": 160,
+        "destino": "mapa1.png"
+      }
+    ]
+  }
+}

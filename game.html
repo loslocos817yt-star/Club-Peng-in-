@@ -3,34 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Club Penguin Plaza Landscape</title>
+    <title>PattitexTEC - Club Penguin</title>
     <style>
         * { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
         #game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
         canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%; object-fit: fill; }
-        
-        .ui-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; justify-content: space-between; align-items: flex-end;
-            pointer-events: none; padding: 30px 50px; box-sizing: border-box;
-        }
+        .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; padding: 30px 50px; box-sizing: border-box; }
         .d-pad { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 15px; pointer-events: auto; }
         .action-pad { pointer-events: auto; margin-bottom: 20px; }
-        
-        /* Botones estilo CP, semi-transparentes */
         .btn { width: 95px; height: 95px; cursor: pointer; opacity: 0.4; transition: 0.1s; filter: drop-shadow(0 0 5px #000); }
         .btn:active { transform: scale(0.9); opacity: 0.9; filter: brightness(1.3) drop-shadow(0 0 10px #fff); }
-        
-        #fs-btn {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            padding: 15px 30px; background: rgba(0,0,0,0.6); color: white;
-            border: 2px solid white; border-radius: 40px; pointer-events: auto; z-index: 1000; font-weight: bold;
-        }
+        #fs-btn { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: rgba(0,0,0,0.6); color: white; border: 2px solid white; border-radius: 40px; pointer-events: auto; z-index: 1000; font-weight: bold; }
     </style>
 </head>
 <body>
-
     <div id="game-container">
         <button id="fs-btn">PANTALLA COMPLETA Y MÚSICA</button>
         <canvas id="gameCanvas"></canvas>
@@ -47,173 +34,9 @@
         </div>
     </div>
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const cCanvas = document.createElement('canvas'); 
-const cCtx = cCanvas.getContext('2d', { willReadFrequently: true });
-
-// Jugador y Pelota ajustados para Horizontal
-const userData = JSON.parse(localStorage.getItem("pinguino_actual")) || { posicion: { x: userData.posicion.x, y: userData.posicion.y } };
-const player = { x: userData.posicion.x, y: userData.posicion.y, speed: 6, w: 70, h: 70, frame: 0, timer: 0, dir: 'sur', moving: false, sitting: false };
-const ball = { x: 300, y: 300, dx: 0, dy: 0, size: 35, friction: 0.985 };
-const inputs = { up: false, down: false, left: false, right: false };
-
-const bgMusic = new Audio('assets/maps/song/mapa1.mp3');
-bgMusic.loop = true;
-
-function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    cCanvas.width = canvas.width;
-    cCanvas.height = canvas.height;
-    if(images['mapCol'] && images['mapCol'].complete) {
-        cCtx.drawImage(images['mapCol'], 0, 0, canvas.width, canvas.height);
-    }
-}
-window.addEventListener('resize', resize);
-
-const sprites = {
-    map: 'assets/maps/mapa1.png',
-    mapCol: 'assets/maps/colisión/map1.png',
-    norte: 'assets/pingüino/caminar&iddle_norte.png',
-    sur_iddle: 'assets/pingüino/iddle_sur.png',
-    sur_w1: 'assets/pingüino/caminar1_sur.png',
-    sur_w2: 'assets/pingüino/caminar2_sur.png',
-    der1: 'assets/pingüino/caminar_der1.png',
-    der2: 'assets/pingüino/caminar_der2.png',
-    izq1: 'assets/pingüino/caminar_izq1.png',
-    izq2: 'assets/pingüino/caminar_izq2.png',
-    sit: 'assets/pingüino/centado.png',
-    shadow: 'assets/etc/sombra.png',
-    ball: 'assets/etc/pelota.png'
-};
-
-const images = {};
-function preload() {
-    for (let key in sprites) {
-        const img = new Image();
-        img.src = sprites[key];
-        images[key] = img;
-        if (key === 'mapCol') img.onload = resize;
-    }
-}
-
-function isWalkable(x, y) {
-    const cx = Math.floor(x + player.w / 2);
-    const cy = Math.floor(y + player.h - 10);
-    if (cx < 0 || cx >= canvas.width || cy < 0 || cy >= canvas.height) return false;
-    const p = cCtx.getImageData(cx, cy, 1, 1).data;
-    return p[3] < 120; // Si es transparente o alpha bajo, camina
-}
-
-function setupBtn(id, key) {
-    const el = document.getElementById(id);
-    if(!el) return;
-    const start = (e) => { e.preventDefault(); if(key === 'sit') player.sitting = !player.sitting; else { inputs[key] = true; player.sitting = false; } };
-    const end = (e) => { e.preventDefault(); if(key !== 'sit') inputs[key] = false; };
-    el.addEventListener('touchstart', start); el.addEventListener('touchend', end);
-    el.addEventListener('mousedown', start); el.addEventListener('mouseup', end);
-}
-
-setupBtn('btnUp', 'up'); setupBtn('btnDown', 'down'); setupBtn('btnLeft', 'left'); setupBtn('btnRight', 'right'); setupBtn('btnCenter', 'sit');
-
-document.getElementById('fs-btn').onclick = function() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-        if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{});
-        bgMusic.play();
-        this.style.display = 'none';
-        resize();
-    }
-};
-
-function update() {
-    player.moving = false;
-    if (player.sitting) return;
-    let nx = player.x, ny = player.y;
-    
-    // Movimiento con corrección diagonal
-    let moveX = 0, moveY = 0;
-    if (inputs.up) moveY -= 1; if (inputs.down) moveY += 1;
-    if (inputs.left) moveX -= 1; if (inputs.right) moveX += 1;
-    
-    if (moveX !== 0 || moveY !== 0) {
-        const length = Math.hypot(moveX, moveY);
-        nx += (moveX / length) * player.speed;
-        ny += (moveY / length) * player.speed;
-        player.moving = true;
-        if (moveY < 0) player.dir = 'norte'; else if (moveY > 0) player.dir = 'sur';
-        if (moveX < 0) player.dir = 'izq'; else if (moveX > 0) player.dir = 'der';
-    }
-
-    if (isWalkable(nx, ny)) { player.x = nx; player.y = ny; }
-
-    if (player.moving) {
-        player.timer++;
-        if (player.timer > 8) { player.frame = player.frame === 0 ? 1 : 0; player.timer = 0; }
-    }
-
-    // Física de Pelota con Fricción (Messi style)
-    ball.x += ball.dx; ball.y += ball.dy;
-    ball.dx *= ball.friction; ball.dy *= ball.friction;
-    
-    // Rebote suave en los bordes de la plaza
-    if (ball.x < 150 || ball.x > canvas.width - 250) ball.dx *= -0.8;
-    if (ball.y < 250 || ball.y > canvas.height - 150) ball.dy *= -0.8;
-
-    if (Math.abs(ball.dx) < 0.1) ball.dx = 0;
-    if (Math.abs(ball.dy) < 0.1) ball.dy = 0;
-
-    // Colisión Penguin-Pelota (Z-Sorting)
-    const dist = Math.hypot((player.x + player.w/2) - (ball.x + ball.size/2), (player.y + player.h - 15) - (ball.y + ball.size - 5));
-    if (dist < 30) {
-        ball.dx = ((ball.x + ball.size/2) - (player.x + player.w/2)) * 0.5;
-        ball.dy = ((ball.y + ball.size - 5) - (player.y + player.h - 15)) * 0.5;
-    }
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (images['map'].complete) ctx.drawImage(images['map'], 0, 0, canvas.width, canvas.height);
-
-    // Sombras (Z-Sorting base)
-    if (images['shadow'].complete) {
-        ctx.drawImage(images['shadow'], player.x + 10, player.y + player.h - 15, player.w - 20, 15);
-        ctx.drawImage(images['shadow'], ball.x + 2, ball.y + ball.size - 8, ball.size - 4, 10);
-    }
-
-    // Decidir quién va delante (Z-Sorting simple)
-    const objects = [
-        { type: 'ball', y: ball.y + ball.size, img: images['ball'], x: ball.x, sy: ball.size },
-        { type: 'player', y: player.y + player.h, img: null, x: player.x, sy: player.h }
-    ];
-    objects.sort((a, b) => a.y - b.y); // Ordenar por la base (coordenada Y)
-
-    objects.forEach(obj => {
-        if (obj.type === 'ball' && obj.img.complete) {
-            ctx.drawImage(obj.img, obj.x, ball.y, ball.size, ball.size);
-        } else if (obj.type === 'player') {
-            let pImg;
-            if (player.sitting) pImg = images['sit'];
-            else if (player.moving) {
-                if (player.dir === 'sur') pImg = player.frame === 0 ? images['sur_w1'] : images['sur_w2'];
-                else if (player.dir === 'norte') pImg = images['norte'];
-                else if (player.dir === 'der') pImg = player.frame === 0 ? images['der1'] : images['der2'];
-                else if (player.dir === 'izq') pImg = player.frame === 0 ? images['izq1'] : images['izq2'];
-            } else {
-                pImg = player.dir === 'sur' ? images['sur_iddle'] : (player.dir === 'norte' ? images['norte'] : (player.dir === 'der' ? images['der1'] : images['izq1']));
-            }
-            if (pImg && pImg.complete) ctx.drawImage(pImg, player.x, player.y, player.w, player.h);
-        }
-    });
-
-    requestAnimationFrame(draw);
-}
-
-preload();
-setInterval(update, 1000/60);
-draw();
-</script>
+    <script src="js/globals.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/render.js"></script>
 </body>
 </html>
