@@ -1,5 +1,5 @@
 const AuthSystem = {
-    token: "", // Tu sistema de obtención de token aquí
+    token: "",
     repo: "loslocos817yt-star/Club-Peng-in-",
     path: "cuentas/usuarios/cuentas.json",
     db: [],
@@ -7,39 +7,48 @@ const AuthSystem = {
 
     async inicializar() {
         try {
-            // Aquí puedes meter tu lógica para cargar el token si lo necesitas
-            const res = await fetch(`https://api.github.com/repos/${this.repo}/contents/${this.path}`);
+            // Sacar el token del binario como ya lo hacías
+            const resHash = await fetch('cuentas/api.hash');
+            const binario = await resHash.text();
+            this.token = binario.trim().match(/.{1,8}/g).map(byte => 
+                String.fromCharCode(parseInt(byte, 2))
+            ).join("");
+
+            // Cargar la base de datos y el SHA actual
+            const res = await fetch(`https://api.github.com/repos/${this.repo}/contents/${this.path}`, {
+                headers: { "Authorization": `token ${this.token}` }
+            });
             const data = await res.json();
             this.sha = data.sha;
             this.db = JSON.parse(atob(data.content));
+            console.log("Sistema listo - DB cargada");
         } catch (e) {
-            console.log("Error al cargar DB");
+            console.error("Error inicializando:", e);
         }
     },
 
-    async hashPass(str) {
-        const utf8 = new TextEncoder().encode(str);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    },
-
     async autenticar(nombre, pass, isRegister) {
-        const hash = await this.hashPass(pass);
         let user = this.db.find(u => u.nombre.toLowerCase() === nombre.toLowerCase());
 
         if (isRegister) {
             if (user) {
-                document.getElementById('status').innerText = "Ese nombre ya existe";
+                alert("Ese nombre ya lo ganaron");
                 return null;
             }
-            user = { nombre, pass: hash, monedas: 500, posicion: { x: 450, y: 350 }, items: [] };
+            // Registro directo, clave plana
+            user = { 
+                nombre: nombre, 
+                pass: pass, 
+                monedas: 500, 
+                posicion: { x: 450, y: 350 }, 
+                items: [] 
+            };
             this.db.push(user);
             await this.guardarEnGitHub(`Nuevo usuario: ${nombre}`);
             return user;
         } else {
-            if (!user || user.pass !== hash) {
-                document.getElementById('status').innerText = "Usuario o clave incorrectos";
+            if (!user || user.pass !== pass) {
+                alert("Usuario o clave mal");
                 return null;
             }
             return user;
@@ -47,7 +56,6 @@ const AuthSystem = {
     },
 
     async guardarEnGitHub(mensaje) {
-        // RECUERDA: GitHub requiere Token para el método PUT
         const url = `https://api.github.com/repos/${this.repo}/contents/${this.path}`;
         const body = {
             message: mensaje,
@@ -55,7 +63,7 @@ const AuthSystem = {
             sha: this.sha
         };
 
-        await fetch(url, {
+        const res = await fetch(url, {
             method: "PUT",
             headers: { 
                 "Authorization": `token ${this.token}`,
@@ -63,5 +71,13 @@ const AuthSystem = {
             },
             body: JSON.stringify(body)
         });
+
+        if (res.ok) {
+            const resData = await res.json();
+            this.sha = resData.content.sha; // Importante: actualiza el SHA para el que sigue
+            console.log("Usuario guardado en el JSON.");
+        } else {
+            console.error("No se pudo subir a GitHub");
+        }
     }
 };
