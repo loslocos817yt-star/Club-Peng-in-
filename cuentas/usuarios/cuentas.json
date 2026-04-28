@@ -18,5 +18,15 @@
       "y": 350
     },
     "items": []
+  },
+  {
+    "nombre": "isnan",
+    "pass": "tux722123",
+    "monedas": 500,
+    "posicion": {
+      "x": 450,
+      "y": 350
+    },
+    "items": []
   }
 ]
