@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Club Penguin - PattitexTEC</title>
+    <style>
+        body {
+            background: #0099ff url('assets/maps/mapa1.png') no-repeat center center;
+            background-size: cover; height: 100vh; margin: 0; display: flex;
+            align-items: center; justify-content: center;
+            font-family: 'Arial Rounded MT Bold', Arial, sans-serif; overflow: hidden;
+        }
+        body::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 74, 141, 0.6); z-index: 0;
+        }
+        .login-card {
+            position: relative; z-index: 1; background: #0059b3; border: 6px solid #ffffff;
+            border-radius: 40px; padding: 30px; width: 320px; text-align: center;
+            box-shadow: 0 15px 0 rgba(0,0,0,0.2);
+        }
+        .preview-container {
+            background: #fff; width: 120px; height: 120px; margin: -80px auto 10px auto;
+            border-radius: 50%; border: 6px solid #0059b3; display: flex;
+            align-items: center; justify-content: center; overflow: hidden;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+        }
+        .preview-container img { width: 110%; height: auto; margin-top: 10px; }
+        .logo-main { width: 90%; height: auto; margin-bottom: 10px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        
+        .counter { color: #ffcc00; font-weight: bold; margin-bottom: 10px; font-size: 16px; }
+        
+        input {
+            width: 90%; padding: 12px; margin: 8px 0; border-radius: 12px;
+            border: 3px solid #004080; font-size: 16px; outline: none;
+            text-align: center; font-weight: bold;
+        }
+        
+        .btn-play {
+            background: #99cc00; color: white; font-size: 24px; padding: 12px 0; width: 100%;
+            border: none; border-radius: 15px; cursor: pointer; font-weight: bold;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.3); box-shadow: 0 6px 0 #669900;
+            margin-top: 10px; transition: 0.1s;
+        }
+        .btn-play:active { transform: translateY(4px); box-shadow: 0 2px 0 #669900; }
+        .btn-play:disabled { background: #cccccc; box-shadow: 0 6px 0 #999999; cursor: not-allowed; }
+        
+        .toggle-link {
+            color: #ffcc00; margin-top: 15px; cursor: pointer; font-size: 14px;
+            text-decoration: underline; display: block;
+        }
+        .status { margin-top: 15px; font-size: 14px; color: #fff; min-height: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="preview-container"><img src="assets/pingüino/preview.png" alt="Preview"></div>
+        <div class="counter">Pingüinos: <span id="pingu-total">0</span></div>
+        <img src="assets/etc/ui%26gui/logo.png" class="logo-main" alt="Logo">
+        
+        <div id="form-container">
+            <input type="text" id="user-name" placeholder="Nombre">
+            <input type="password" id="user-pass" placeholder="Contraseña">
+            <button class="btn-play" id="btn-action">ENTRAR</button>
+        </div>
+
+        <span class="toggle-link" id="toggle-mode">¿No tienes cuenta? Crea una</span>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script src="cuentas/login.js"></script>
+    <script>
+        const btn = document.getElementById('btn-action');
+        const status = document.getElementById('status');
+        const toggle = document.getElementById('toggle-mode');
+        const counter = document.getElementById('pingu-total');
+        let isRegister = false;
+
+        window.onload = async () => {
+            await AuthSystem.inicializar();
+            counter.innerText = AuthSystem.db.length;
+            
+            const saved = localStorage.getItem("pinguino_actual");
+            if (saved) {
+                const user = JSON.parse(saved);
+                status.innerText = "Bienvenido de nuevo, " + user.nombre;
+            }
+        };
+
+        toggle.onclick = () => {
+            isRegister = !isRegister;
+            btn.innerText = isRegister ? "REGISTRAR" : "ENTRAR";
+            toggle.innerText = isRegister ? "¿Ya tienes cuenta? Entra" : "¿No tienes cuenta? Crea una";
+            status.innerText = "";
+        };
+
+        btn.onclick = async () => {
+            const nombre = document.getElementById('user-name').value.trim();
+            const pass = document.getElementById('user-pass').value.trim();
+
+            if (!nombre || !pass) {
+                status.innerText = "¡Faltan datos!";
+                return;
+            }
+
+            status.innerText = "Sincronizando...";
+            btn.disabled = true;
+
+            const user = await AuthSystem.autenticar(nombre, pass, isRegister);
+
+            if (user) {
+                localStorage.setItem('pinguino_actual', JSON.stringify(user));
+                window.location.href = "game.html";
+            } else {
+                btn.disabled = false;
+                status.innerText = isRegister ? "Error al crear cuenta" : "Datos incorrectos";
+            }
+        };
+    </script>
+</body>
+</html>

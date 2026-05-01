@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PattitexTEC - Club Penguin</title>
+    <style>
+        * { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%; object-fit: fill; }
+        .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; padding: 30px 50px; box-sizing: border-box; }
+        .d-pad { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 15px; pointer-events: auto; }
+        .action-pad { pointer-events: auto; margin-bottom: 20px; }
+        .btn { width: 95px; height: 95px; cursor: pointer; opacity: 0.4; transition: 0.1s; filter: drop-shadow(0 0 5px #000); }
+        .btn:active { transform: scale(0.9); opacity: 0.9; filter: brightness(1.3) drop-shadow(0 0 10px #fff); }
+        #fs-btn { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: rgba(0,0,0,0.6); color: white; border: 2px solid white; border-radius: 40px; pointer-events: auto; z-index: 1000; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <button id="fs-btn">PANTALLA COMPLETA Y MÚSICA</button>
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui-overlay">
+            <div class="d-pad">
+                <img src="assets/controles/arriba.png" class="btn" style="grid-area: up" id="btnUp">
+                <img src="assets/controles/izquierda.png" class="btn" style="grid-area: left" id="btnLeft">
+                <img src="assets/controles/derecha.png" class="btn" style="grid-area: right" id="btnRight">
+                <img src="assets/controles/abajo.png" class="btn" style="grid-area: down" id="btnDown">
+            </div>
+            <div class="action-pad">
+                <img src="assets/controles/centro.png" class="btn" id="btnCenter">
+            </div>
+        </div>
+    </div>
+
+    <script src="js/globals.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/render.js"></script>
+</body>
+</html>
