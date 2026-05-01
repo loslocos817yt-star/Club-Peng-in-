@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="icon" type="image/png" href="assets/etc/ui&gui/icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PattitexTEC - Club Penguin</title>
@@ -16,7 +17,7 @@
         .btn:active { transform: scale(0.9); opacity: 0.9; filter: brightness(1.3) drop-shadow(0 0 10px #fff); }
         #fs-btn { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: rgba(0,0,0,0.6); color: white; border: 2px solid white; border-radius: 40px; pointer-events: auto; z-index: 1000; font-weight: bold; }
     </style>
-</head>
+<style> @media (pointer: fine) { #btnUp, #btnDown, #btnLeft, #btnRight, #btnCenter, #btnSnow { display: none !important; } } </style></head>
 <body>
     <div id="game-container">
         <button id="fs-btn">PANTALLA COMPLETA Y MÚSICA</button>

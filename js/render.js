@@ -23,6 +23,20 @@ window.onload = () => {
         el.addEventListener('mousedown', start); el.addEventListener('mouseup', end);
     }
     setupBtn('btnUp', 'up'); setupBtn('btnDown', 'down'); setupBtn('btnLeft', 'left'); setupBtn('btnRight', 'right'); setupBtn('btnCenter', 'sit');
+    window.addEventListener('keydown', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'w') inputs.up = true;
+        if (k === 's') inputs.down = true;
+        if (k === 'a') inputs.left = true;
+        if (k === 'd') inputs.right = true;
+    });
+    window.addEventListener('keyup', (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'w') inputs.up = false;
+        if (k === 's') inputs.down = false;
+        if (k === 'a') inputs.left = false;
+        if (k === 'd') inputs.right = false;
+    });
 
     // Botón Fullscreen
     document.getElementById('fs-btn').onclick = function() {

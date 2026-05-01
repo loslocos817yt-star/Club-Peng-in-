@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Club Penguin - PattitexTEC</title>
+    <style>
+        body {
+            background: #0099ff url('assets/maps/mapa1.png') no-repeat center center;
+            background-size: cover; height: 100vh; margin: 0; display: flex;
+            align-items: center; justify-content: center;
+            font-family: 'Arial Rounded MT Bold', Arial, sans-serif; overflow: hidden;
+        }
+        body::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 74, 141, 0.6); z-index: 0;
+        }
+        .login-card {
+            position: relative; z-index: 1; background: #0059b3; border: 6px solid #ffffff;
+            border-radius: 40px; padding: 30px; width: 320px; text-align: center;
+            box-shadow: 0 15px 0 rgba(0,0,0,0.2);
+        }
+        .preview-container {
+            background: #fff; width: 120px; height: 120px; margin: -80px auto 10px auto;
+            border-radius: 50%; border: 6px solid #0059b3; display: flex;
+            align-items: center; justify-content: center; overflow: hidden;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.1);
+        }
+        .preview-container img { width: 110%; height: auto; margin-top: 10px; }
+        .logo-main { width: 90%; height: auto; margin-bottom: 10px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        
+        .counter { color: #ffcc00; font-weight: bold; margin-bottom: 10px; font-size: 16px; }
+        
+        input {
+            width: 90%; padding: 12px; margin: 8px 0; border-radius: 12px;
+            border: 3px solid #004080; font-size: 16px; outline: none;
+            text-align: center; font-weight: bold;
+        }
+        
+        .btn-play {
+            background: #99cc00; color: white; font-size: 24px; padding: 12px 0; width: 100%;
+            border: none; border-radius: 15px; cursor: pointer; font-weight: bold;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.3); box-shadow: 0 6px 0 #669900;
+            margin-top: 10px; transition: 0.1s;
+        }
+        .btn-play:active { transform: translateY(4px); box-shadow: 0 2px 0 #669900; }
+        .btn-play:disabled { background: #cccccc; box-shadow: 0 6px 0 #999999; cursor: not-allowed; }
+        
+        .toggle-link {
+            color: #ffcc00; margin-top: 15px; cursor: pointer; font-size: 14px;
+            text-decoration: underline; display: block;
+        }
+        .status { margin-top: 15px; font-size: 14px; color: #fff; min-height: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="preview-container"><img src="assets/pingüino/preview.png" alt="Preview"></div>
+        <div class="counter">Pingüinos: <span id="pingu-total">0</span></div>
+        <img src="assets/etc/ui%26gui/logo.png" class="logo-main" alt="Logo">
+        
+        <div id="form-container">
+            <input type="text" id="user-name" placeholder="Nombre">
+            <input type="password" id="user-pass" placeholder="Contraseña">
+            <button class="btn-play" id="btn-action">ENTRAR</button>
+        </div>
+
+        <span class="toggle-link" id="toggle-mode">¿No tienes cuenta? Crea una</span>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script src="cuentas/login.js"></script>
+    <script>
+        const btn = document.getElementById('btn-action');
+        const status = document.getElementById('status');
+        const toggle = document.getElementById('toggle-mode');
+        const counter = document.getElementById('pingu-total');
+        let isRegister = false;
+
+        window.onload = async () => {
+            await AuthSystem.inicializar();
+            counter.innerText = AuthSystem.db.length;
+            
+            const saved = localStorage.getItem("pinguino_actual");
+            if (saved) {
+                const user = JSON.parse(saved);
+                status.innerText = "Bienvenido de nuevo, " + user.nombre;
+            }
+        };
+
+        toggle.onclick = () => {
+            isRegister = !isRegister;
+            btn.innerText = isRegister ? "REGISTRAR" : "ENTRAR";
+            toggle.innerText = isRegister ? "¿Ya tienes cuenta? Entra" : "¿No tienes cuenta? Crea una";
+            status.innerText = "";
+        };
+
+        btn.onclick = async () => {
+            const nombre = document.getElementById('user-name').value.trim();
+            const pass = document.getElementById('user-pass').value.trim();
+
+            if (!nombre || !pass) {
+                status.innerText = "¡Faltan datos!";
+                return;
+            }
+
+            status.innerText = "Sincronizando...";
+            btn.disabled = true;
+
+            const user = await AuthSystem.autenticar(nombre, pass, isRegister);
+
+            if (user) {
+                localStorage.setItem('pinguino_actual', JSON.stringify(user));
+                window.location.href = "game.html";
+            } else {
+                btn.disabled = false;
+                status.innerText = isRegister ? "Error al crear cuenta" : "Datos incorrectos";
+            }
+        };
+    </script>
+</body>
+</html>
+const AuthSystem = {
+    token: "",
+    repo: "loslocos817yt-star/Club-Peng-in-",
+    path: "cuentas/usuarios/cuentas.json",
+    db: [],
+    sha: "",
+
+    async inicializar() {
+        try {
+            // Sacar el token del binario como ya lo hacías
+            const resHash = await fetch('cuentas/api.hash');
+            const binario = await resHash.text();
+            this.token = binario.trim().match(/.{1,8}/g).map(byte => 
+                String.fromCharCode(parseInt(byte, 2))
+            ).join("");
+
+            // Cargar la base de datos y el SHA actual
+            const res = await fetch(`https://api.github.com/repos/${this.repo}/contents/${this.path}`, {
+                headers: { "Authorization": `token ${this.token}` }
+            });
+            const data = await res.json();
+            this.sha = data.sha;
+            this.db = JSON.parse(atob(data.content));
+            console.log("Sistema listo - DB cargada");
+        } catch (e) {
+            console.error("Error inicializando:", e);
+        }
+    },
+
+    async autenticar(nombre, pass, isRegister) {
+        let user = this.db.find(u => u.nombre.toLowerCase() === nombre.toLowerCase());
+
+        if (isRegister) {
+            if (user) {
+                alert("Ese nombre ya lo ganaron");
+                return null;
+            }
+            // Registro directo, clave plana
+            user = { 
+                nombre: nombre, 
+                pass: pass, 
+                monedas: 500, 
+                posicion: { x: 450, y: 350 }, 
+                items: [] 
+            };
+            this.db.push(user);
+            await this.guardarEnGitHub(`Nuevo usuario: ${nombre}`);
+            return user;
+        } else {
+            if (!user || user.pass !== pass) {
+                alert("Usuario o clave mal");
+                return null;
+            }
+            return user;
+        }
+    },
+
+    async guardarEnGitHub(mensaje) {
+        const url = `https://api.github.com/repos/${this.repo}/contents/${this.path}`;
+        const body = {
+            message: mensaje,
+            content: btoa(JSON.stringify(this.db, null, 2)),
+            sha: this.sha
+        };
+
+        const res = await fetch(url, {
+            method: "PUT",
+            headers: { 
+                "Authorization": `token ${this.token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+            const resData = await res.json();
+            this.sha = resData.content.sha; // Importante: actualiza el SHA para el que sigue
+            console.log("Usuario guardado en el JSON.");
+        } else {
+            console.error("No se pudo subir a GitHub");
+        }
+    }
+};
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PattitexTEC - Club Penguin</title>
+    <style>
+        * { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #game-container { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        canvas { display: block; image-rendering: pixelated; width: 100%; height: 100%; object-fit: fill; }
+        .ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: flex-end; pointer-events: none; padding: 30px 50px; box-sizing: border-box; }
+        .d-pad { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 15px; pointer-events: auto; }
+        .action-pad { pointer-events: auto; margin-bottom: 20px; }
+        .btn { width: 95px; height: 95px; cursor: pointer; opacity: 0.4; transition: 0.1s; filter: drop-shadow(0 0 5px #000); }
+        .btn:active { transform: scale(0.9); opacity: 0.9; filter: brightness(1.3) drop-shadow(0 0 10px #fff); }
+        #fs-btn { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); padding: 15px 30px; background: rgba(0,0,0,0.6); color: white; border: 2px solid white; border-radius: 40px; pointer-events: auto; z-index: 1000; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <button id="fs-btn">PANTALLA COMPLETA Y MÚSICA</button>
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui-overlay">
+            <div class="d-pad">
+                <img src="assets/controles/arriba.png" class="btn" style="grid-area: up" id="btnUp">
+                <img src="assets/controles/izquierda.png" class="btn" style="grid-area: left" id="btnLeft">
+                <img src="assets/controles/derecha.png" class="btn" style="grid-area: right" id="btnRight">
+                <img src="assets/controles/abajo.png" class="btn" style="grid-area: down" id="btnDown">
+            </div>
+            <div class="action-pad">
+                <img src="assets/controles/centro.png" class="btn" id="btnCenter">
+            </div>
+        </div>
+    </div>
+
+    <script src="js/globals.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/render.js"></script>
+</body>
+</html>
+fetch('assets/maps/map.json')
+    .then(r => r.json())
+    .then(data => worldData = data);
+
+function checkPortals(px, py) {
+    if (!worldData[mapaActual]) return;
+    const portales = worldData[mapaActual].portales || [];
+    portalActivo = null; 
+
+    for (let p of portales) {
+        const cX = (p.x1 + p.x2) / 2;
+        const cY = (p.y1 + p.y2) / 2;
+        // Radio de 120px para que aparezca el icono de ubicación
+        if (Math.hypot(px - cX, py - cY) < 120) {
+            portalActivo = p;
+            return;
+        }
+    }
+}
+
+function interactuarPortal() {
+    if (!portalActivo) return;
+    let destino = portalActivo.destino;
+    let data = worldData[destino];
+    
+    // Cambiamos el mapa
+    mapaActual = destino;
+    images['map'].src = 'assets/maps/' + destino;
+    images['mapCol'].src = 'assets/maps/colisión/' + data.archivo_col;
+    
+    // Buscamos el portal de salida en el nuevo mapa
+    let pSalida = data.portales ? data.portales[0] : null;
+    let targetX = canvas.width / 2;
+    let targetY = canvas.height / 2;
+
+    if (pSalida) {
+        targetX = (pSalida.x1 + pSalida.x2) / 2;
+        targetY = (pSalida.y1 + pSalida.y2) / 2;
+    }
+
+    // Esperamos a que cargue la colisión y buscamos sitio seguro
+    setTimeout(() => {
+        let offsets = [0, 30, -30, 60, -60, 90, -90];
+        let encontrado = false;
+        
+        for (let oy of offsets) {
+            for (let ox of offsets) {
+                if (isWalkable(targetX + ox, targetY + oy)) {
+                    player.x = targetX + ox - (player.w / 2);
+                    player.y = targetY + oy - (player.h - 10);
+                    encontrado = true;
+                    break;
+                }
+            }
+            if (encontrado) break;
+        }
+        portalActivo = null;
+    }, 150);
+}
+var canvas, ctx, cCanvas, cCtx;
+var userData = JSON.parse(localStorage.getItem("pinguino_actual")) || { posicion: { x: 400, y: 300 } };
+
+var player = { x: window.innerWidth/2 - 35, y: window.innerHeight/2 - 35, speed: 6, w: 70, h: 70, frame: 0, timer: 0, dir: 'sur', moving: false, sitting: false };
+var ball = { x: 300, y: 300, dx: 0, dy: 0, size: 35, friction: 0.985 };
+var inputs = { up: false, down: false, left: false, right: false };
+
+var bgMusic = new Audio('assets/maps/song/mapa1.mp3');
+bgMusic.loop = true;
+
+var images = {};
+var worldData = {};
+var mapaActual = 'mapa1.png';
+var portalActivo = null; // Guardará el portal que tengas cerca
+
+var sprites = {
+    map: 'assets/maps/mapa1.png',
+    mapCol: 'assets/maps/colisión/map1.png',
+    norte: 'assets/pingüino/caminar&iddle_norte.png',
+    sur_iddle: 'assets/pingüino/iddle_sur.png',
+    sur_w1: 'assets/pingüino/caminar1_sur.png',
+    sur_w2: 'assets/pingüino/caminar2_sur.png',
+    der1: 'assets/pingüino/caminar_der1.png',
+    der2: 'assets/pingüino/caminar_der2.png',
+    izq1: 'assets/pingüino/caminar_izq1.png',
+    izq2: 'assets/pingüino/caminar_izq2.png',
+    sit: 'assets/pingüino/centado.png',
+    shadow: 'assets/etc/sombra.png',
+    ball: 'assets/etc/pelota.png',
+    ubicacion: 'assets/etc/ui&gui/ubicación.png' // Nuevo icono
+};
+function isWalkable(x, y) {
+    // Escaneamos portales cercanos (No detiene el movimiento, solo activa icono)
+    checkPortals(x + player.w / 2, y + player.h - 10);
+
+    const cx = Math.floor(x + player.w / 2);
+    const cy = Math.floor(y + player.h - 10);
+    if (cx < 0 || cx >= canvas.width || cy < 0 || cy >= canvas.height) return false;
+    const p = cCtx.getImageData(cx, cy, 1, 1).data;
+    return p[3] < 120; // Caminable si es transparente
+}
+
+function update() {
+    player.moving = false;
+    if (player.sitting) return;
+    let nx = player.x, ny = player.y;
+    
+    let moveX = 0, moveY = 0;
+    if (inputs.up) moveY -= 1; if (inputs.down) moveY += 1;
+    if (inputs.left) moveX -= 1; if (inputs.right) moveX += 1;
+    
+    if (moveX !== 0 || moveY !== 0) {
+        const length = Math.hypot(moveX, moveY);
+        nx += (moveX / length) * player.speed;
+        ny += (moveY / length) * player.speed;
+        player.moving = true;
+        if (moveY < 0) player.dir = 'norte'; else if (moveY > 0) player.dir = 'sur';
+        if (moveX < 0) player.dir = 'izq'; else if (moveX > 0) player.dir = 'der';
+    }
+
+    if (isWalkable(nx, ny)) { player.x = nx; player.y = ny; }
+
+    if (player.moving) {
+        player.timer++;
+        if (player.timer > 8) { player.frame = player.frame === 0 ? 1 : 0; player.timer = 0; }
+    }
+
+    ball.x += ball.dx; ball.y += ball.dy;
+    ball.dx *= ball.friction; ball.dy *= ball.friction;
+    if (ball.x < 150 || ball.x > canvas.width - 250) ball.dx *= -0.8;
+    if (ball.y < 250 || ball.y > canvas.height - 150) ball.dy *= -0.8;
+    if (Math.abs(ball.dx) < 0.1) ball.dx = 0;
+    if (Math.abs(ball.dy) < 0.1) ball.dy = 0;
+
+    const dist = Math.hypot((player.x + player.w/2) - (ball.x + ball.size/2), (player.y + player.h - 15) - (ball.y + ball.size - 5));
+    if (dist < 30) {
+        ball.dx = ((ball.x + ball.size/2) - (player.x + player.w/2)) * 0.5;
+        ball.dy = ((ball.y + ball.size - 5) - (player.y + player.h - 15)) * 0.5;
+    }
+}
+window.onload = () => {
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    cCanvas = document.createElement('canvas'); 
+    cCtx = cCanvas.getContext('2d', { willReadFrequently: true });
+
+    // Preload
+    for (let key in sprites) {
+        images[key] = new Image();
+        images[key].src = sprites[key];
+        if (key === 'mapCol') images[key].onload = resize;
+    }
+
+    window.addEventListener('resize', resize);
+    
+    // Configurar botones
+    function setupBtn(id, key) {
+        const el = document.getElementById(id);
+        if(!el) return;
+        const start = (e) => { e.preventDefault(); if(key === 'sit') player.sitting = !player.sitting; else { inputs[key] = true; player.sitting = false; } };
+        const end = (e) => { e.preventDefault(); if(key !== 'sit') inputs[key] = false; };
+        el.addEventListener('touchstart', start); el.addEventListener('touchend', end);
+        el.addEventListener('mousedown', start); el.addEventListener('mouseup', end);
+    }
+    setupBtn('btnUp', 'up'); setupBtn('btnDown', 'down'); setupBtn('btnLeft', 'left'); setupBtn('btnRight', 'right'); setupBtn('btnCenter', 'sit');
+
+    // Botón Fullscreen
+    document.getElementById('fs-btn').onclick = function() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+            if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{});
+            bgMusic.play().catch(e => console.log('Audio bloqueado aún:', e));
+            this.style.display = 'none';
+            resize();
+        }
+    };
+
+    // Tocar el portal en la pantalla
+    canvas.addEventListener('touchstart', (e) => {
+        if (portalActivo) {
+            const tx = e.touches[0].clientX;
+            const ty = e.touches[0].clientY;
+            const cX = (portalActivo.x1 + portalActivo.x2) / 2;
+            const cY = (portalActivo.y1 + portalActivo.y2) / 2;
+            // Si tocas a menos de 60px del icono flotante, ¡Boom! Viajas.
+            if (Math.hypot(tx - cX, ty - cY) < 100) interactuarPortal();
+        }
+    });
+
+    setInterval(update, 1000/60);
+    draw();
+};
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    cCanvas.width = canvas.width;
+    cCanvas.height = canvas.height;
+    if(images['mapCol'] && images['mapCol'].complete) cCtx.drawImage(images['mapCol'], 0, 0, canvas.width, canvas.height);
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (images['map'].complete) ctx.drawImage(images['map'], 0, 0, canvas.width, canvas.height);
+
+    if (images['shadow'].complete) {
+        ctx.drawImage(images['shadow'], player.x + 10, player.y + player.h - 15, player.w - 20, 15);
+        ctx.drawImage(images['shadow'], ball.x + 2, ball.y + ball.size - 8, ball.size - 4, 10);
+    }
+
+    const objects = [
+        { type: 'ball', y: ball.y + ball.size, f: () => ctx.drawImage(images['ball'], ball.x, ball.y, ball.size, ball.size) },
+        { type: 'player', y: player.y + player.h, f: () => {
+            let pImg;
+            if (player.sitting) pImg = images['sit'];
+            else if (player.moving) {
+                if (player.dir === 'sur') pImg = player.frame === 0 ? images['sur_w1'] : images['sur_w2'];
+                else if (player.dir === 'norte') pImg = images['norte'];
+                else if (player.dir === 'der') pImg = player.frame === 0 ? images['der1'] : images['der2'];
+                else if (player.dir === 'izq') pImg = player.frame === 0 ? images['izq1'] : images['izq2'];
+            } else {
+                pImg = player.dir === 'sur' ? images['sur_iddle'] : (player.dir === 'norte' ? images['norte'] : (player.dir === 'der' ? images['der1'] : images['izq1']));
+            }
+            if (pImg && pImg.complete) ctx.drawImage(pImg, player.x, player.y, player.w, player.h);
+        }}
+    ].sort((a, b) => a.y - b.y).forEach(obj => obj.f());
+
+    // DIBUJAR EL ICONO DE UBICACIÓN (Flotando chido)
+    if (portalActivo && images['ubicacion'].complete) {
+        const cX = (portalActivo.x1 + portalActivo.x2) / 2;
+        const cY = (portalActivo.y1 + portalActivo.y2) / 2;
+        const animFlote = Math.sin(Date.now() / 150) * 8; // Sube y baja 8 pixeles
+        ctx.drawImage(images['ubicacion'], cX - 25, cY - 40 + animFlote, 80, 80);
+    }
+
+    requestAnimationFrame(draw);
+}
