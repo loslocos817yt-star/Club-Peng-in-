@@ -58,5 +58,15 @@
       "y": 350
     },
     "items": []
+  },
+  {
+    "nombre": "Zahara5484",
+    "pass": "20130506",
+    "monedas": 500,
+    "posicion": {
+      "x": 450,
+      "y": 350
+    },
+    "items": []
   }
 ]
